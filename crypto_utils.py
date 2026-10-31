@@ -1,51 +1,35 @@
-import json
-import os
+"""Криптография: получение ключа из пароля, шифрование и расшифровка."""
 
-VAULT_FILE = "vault.json"
+import base64
 
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-class Vault:
-    """Хранилище паролей: держит записи в памяти и умеет сохранять их в файл."""
-
-    def __init__(self, key):
-        self.key = key
-        self.entries = {}
+ITERATIONS = 600_000
 
 
+def derive_key(password, salt):
+    """Получить ключ Fernet из мастер-пароля (строка) и соли (байты)."""
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=ITERATIONS
+    )
+    password = password.encode()
+    key = base64.urlsafe_b64encode(kdf.derive(password))
+    return key
 
-    def load(self):
-        """Загрузить записи из файла. Если файла нет — оставить пустой словарь."""
-        if not os.path.exists(VAULT_FILE):
-            self.entries = {}
-            return
-        with open(VAULT_FILE, "r", encoding="utf-8") as f:
-            self.entries = json.load(f)
 
-    def save(self):
-        """Записать все записи в файл."""
-        with open(VAULT_FILE, "w", encoding="utf-8") as f:
-            json.dump(self.entries, f, ensure_ascii=False, indent=4)
+def encrypt(data, key):
+    """Зашифровать байты data ключом key, вернуть токен (байты)."""
+    f = Fernet(key)
+    return f.encrypt(data)
 
-    def exists(self, website):
-        return website in self.entries
 
-    def add(self, website, login, password):
-        """Добавить или перезаписать запись и сразу сохранить."""
-        self.entries[website] = {"login": login, "password": password}
-        self.save()
-
-    def get(self, website):
-        """Вернуть запись (словарь) или None, если такой нет."""
-        return self.entries.get(website)
-
-    def delete(self, website):
-        """Удалить запись. Вернуть True, если удалили, и False, если такой не было."""
-        if website not in self.entries:
-            return False
-        del self.entries[website]
-        self.save()
-        return True
-
-    def list_sites(self):
-        """Список пар (сайт, логин) без паролей."""
-        return [(site, data["login"]) for site, data in self.entries.items()]
+def decrypt(token, key):
+    """Расшифровать токен ключом key, вернуть исходные байты.
+    При неверном ключе выбрасывает InvalidToken."""
+    f = Fernet(key)
+    return f.decrypt(token)
