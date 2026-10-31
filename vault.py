@@ -1,32 +1,35 @@
 import json
 import os
+from crypto_utils import encrypt, decrypt
 
-VAULT_FILE = "vault.json"
+VAULT_FILE = "vault.dat"
 
 
 class Vault:
     """Хранилище паролей: держит записи в памяти и умеет сохранять их в файл."""
 
     def __init__(self, key):
-        self.key = key          # ключ шифрования (пока не используется)
-        self.entries = {}       # {"сайт": {"login": ..., "password": ...}}
-
-    # --- работа с файлом ---
+        self.key = key
+        self.entries = {}
 
     def load(self):
         """Загрузить записи из файла. Если файла нет — оставить пустой словарь."""
         if not os.path.exists(VAULT_FILE):
             self.entries = {}
             return
-        with open(VAULT_FILE, "r", encoding="utf-8") as f:
-            self.entries = json.load(f)
+        with open(VAULT_FILE, "rb") as f:
+            token = f.read()
+
+        data = decrypt(token, self.key)
+        txt = data.decode()
+        self.entries = json.loads(txt)
 
     def save(self):
         """Записать все записи в файл."""
-        with open(VAULT_FILE, "w", encoding="utf-8") as f:
-            json.dump(self.entries, f, ensure_ascii=False, indent=4)
-
-    # --- операции с записями ---
+        txt = json.dumps(self.entries, ensure_ascii=False, indent=4)
+        token = encrypt(txt.encode(), self.key)
+        with open(VAULT_FILE, "wb") as f:
+            f.write(token)
 
     def exists(self, website):
         return website in self.entries
