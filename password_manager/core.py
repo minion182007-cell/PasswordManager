@@ -23,6 +23,12 @@ class PasswordManager:
             raw: dict[str, str] = json.load(f)
         return raw
 
+    def verify(self, password: str) -> bool:
+        """Проверить мастер-пароль у открытого хранилища."""
+        if self._master_salt==None or self._master_hash==None:
+            return False
+        return verify_master(password,self._master_salt,self._master_hash)
+
     def _persist(self) -> None:
         """Записать хранилище в JSON-файл."""
         key = self._require_unlocked()

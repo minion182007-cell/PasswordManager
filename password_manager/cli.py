@@ -1,7 +1,6 @@
 """Интерфейс командной строки: вход и главное меню."""
 
 import argparse
-import sys
 from getpass import getpass
 
 from password_manager.core import PasswordManager
@@ -16,20 +15,21 @@ def build_parser() -> argparse.ArgumentParser:
     group.add_argument("--init", action="store_true", help="создать новое хранилище")
     group.add_argument("--unlock", action="store_true", help="открыть хранилище и перейти в меню")
     group.add_argument("--generate", action="store_true", help="сгенерировать надёжный пароль")
-
-    args = parser.parse_args()
-    return (parser)
+    return parser
 
 
 def run_init(manager: PasswordManager) -> int:
     """Создать хранилище. Вернуть код выхода: 0 — успех, 1 — ошибка."""
-    pwd = getpass("Придумайте мастер паролей: ")
-    pwd2 = getpass("Повторите мастер паролей:")
-    if pwd == "":
-        print("Ваш текст про пустой пароль")
+    if manager.exists():
+        print("Хранилище уже создано. Используйте --unlock")
+        return 1
+    pwd = getpass("Придумайте мастер-пароль: ")
+    pwd2 = getpass("Повторите мастер-пароль: ")
+    if not pwd:
+        print("Мастер-пароль не может быть пустым")
         return 1
     if pwd != pwd2:
-        print("Ваши пароли не совпали")
+        print("Пароли не совпали, запустите --init ещё раз")
         return 1
     try:
         manager.init_master(pwd)
@@ -42,26 +42,16 @@ def run_init(manager: PasswordManager) -> int:
 
 def run_unlock(manager: PasswordManager) -> bool:
     """До MAX_ATTEMPTS попыток ввести мастер-пароль. True — открыто."""
-    atempt = MAX_ATTEMPTS
-    for i in range(atempt):
-        pwd = getpass("Придумайте мастер паролей: ")
+    attempts_left = MAX_ATTEMPTS
+    for _ in range(MAX_ATTEMPTS):
+        pwd = getpass("Введите мастер-пароль: ")
         if manager.unlock(pwd):
             return True
-        atempt -= 1
-        if atempt > 0:
-            print(f"Неверный пароль, осталось {atempt}")
+        attempts_left -= 1
+        if attempts_left > 0:
+            print(f"Неверный пароль, осталось попыток: {attempts_left}")
+    print("Попытки закончились")
     return False
-
-def cmd_get(manager: PasswordManager) -> None:
-    """Повторно спросить мастер-пароль, затем показать логин и пароль."""
-
-
-def menu(manager: PasswordManager) -> None:
-    """Главное меню — бывший цикл while из main()."""
-
-
-def main(argv: list[str] | None = None) -> int:
-    """Разобрать аргументы и запустить нужный режим. Вернуть код выхода."""
 
 
 def cmd_add(manager: PasswordManager) -> None:
@@ -95,11 +85,15 @@ def cmd_list(manager: PasswordManager) -> None:
 
 
 def cmd_get(manager: PasswordManager) -> None:
-    """Спросить сайт и показать его логин и пароль."""
+    """Спросить сайт, подтвердить мастер-паролем и показать логин и пароль."""
     name = input("Введите сайт: ").strip()
     entry = manager.get_entry(name)
     if entry is None:
-        print("Не найдено")
+        print("Нет такого сайта в базе")
+        return
+    pwd = getpass("Подтвердите мастер-пароль: ")
+    if not manager.verify(pwd):
+        print("Неверный мастер-пароль")
         return
     print(f"Логин:  {entry['login']}")
     print(f"Пароль: {entry['password']}")
@@ -114,8 +108,34 @@ def cmd_delete(manager: PasswordManager) -> None:
         print("Не найдено")
 
 
+def menu(manager: PasswordManager) -> None:
+    """Главное меню: цикл команд до выхода."""
+    while True:
+        print("\n=== Менеджер паролей ===")
+        print("1. Добавить запись")
+        print("2. Список записей")
+        print("3. Показать пароль")
+        print("4. Удалить запись")
+        print("0. Выход")
 
-def main(argv: list[str] | None = None) -> int:
+        choice = input("> ").strip()
+
+        if choice == "1":
+            cmd_add(manager)
+        elif choice == "2":
+            cmd_list(manager)
+        elif choice == "3":
+            cmd_get(manager)
+        elif choice == "4":
+            cmd_delete(manager)
+        elif choice == "0":
+            print("До свидания")
+            break
+        else:
+            print("Нет такой команды")
+
+
+def _run(argv: list[str] | None) -> int:
     """Разобрать аргументы и запустить нужный режим. Вернуть код выхода."""
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -139,3 +159,12 @@ def main(argv: list[str] | None = None) -> int:
 
     parser.print_help()
     return 1
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Точка входа: запустить программу и аккуратно обработать Ctrl+C."""
+    try:
+        return _run(argv)
+    except KeyboardInterrupt:
+        print("\nВыход")
+        return 130
