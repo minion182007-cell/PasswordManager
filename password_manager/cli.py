@@ -1,12 +1,67 @@
 """Интерфейс командной строки: вход и главное меню."""
 
-import os
+import argparse
+import sys
 from getpass import getpass
 
 from password_manager.core import PasswordManager
-from password_manager.crypto_utils import derive_key
 
-SALT_PATH = "salt.bin"
+MAX_ATTEMPTS = 3
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """Создать парсер аргументов командной строки."""
+    parser = argparse.ArgumentParser(description="Менеджер паролей в терминале")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--init", action="store_true", help="создать новое хранилище")
+    group.add_argument("--unlock", action="store_true", help="открыть хранилище и перейти в меню")
+    group.add_argument("--generate", action="store_true", help="сгенерировать надёжный пароль")
+
+    args = parser.parse_args()
+    return (parser)
+
+
+def run_init(manager: PasswordManager) -> int:
+    """Создать хранилище. Вернуть код выхода: 0 — успех, 1 — ошибка."""
+    pwd = getpass("Придумайте мастер паролей: ")
+    pwd2 = getpass("Повторите мастер паролей:")
+    if pwd == "":
+        print("Ваш текст про пустой пароль")
+        return 1
+    if pwd != pwd2:
+        print("Ваши пароли не совпали")
+        return 1
+    try:
+        manager.init_master(pwd)
+    except FileExistsError:
+        print("Хранилище уже создано. Используйте --unlock")
+        return 1
+    print("Хранилище создано")
+    return 0
+
+
+def run_unlock(manager: PasswordManager) -> bool:
+    """До MAX_ATTEMPTS попыток ввести мастер-пароль. True — открыто."""
+    atempt = MAX_ATTEMPTS
+    for i in range(atempt):
+        pwd = getpass("Придумайте мастер паролей: ")
+        if manager.unlock(pwd):
+            return True
+        atempt -= 1
+        if atempt > 0:
+            print(f"Неверный пароль, осталось {atempt}")
+    return False
+
+def cmd_get(manager: PasswordManager) -> None:
+    """Повторно спросить мастер-пароль, затем показать логин и пароль."""
+
+
+def menu(manager: PasswordManager) -> None:
+    """Главное меню — бывший цикл while из main()."""
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Разобрать аргументы и запустить нужный режим. Вернуть код выхода."""
 
 
 def cmd_add(manager: PasswordManager) -> None:
@@ -59,46 +114,28 @@ def cmd_delete(manager: PasswordManager) -> None:
         print("Не найдено")
 
 
-def _temporary_login() -> PasswordManager:
-    """Временный вход: соль + мастер-пароль → ключ. Заменится в задании 2."""
-    if os.path.exists(SALT_PATH):
-        with open(SALT_PATH, "rb") as f:
-            salt = f.read()
-    else:
-        salt = os.urandom(16)
-        with open(SALT_PATH, "wb") as f:
-            f.write(salt)
 
-    password = getpass("Мастер-пароль: ")
-    manager = PasswordManager(derive_key(password, salt))
-    manager._load()
-    return manager
+def main(argv: list[str] | None = None) -> int:
+    """Разобрать аргументы и запустить нужный режим. Вернуть код выхода."""
+    parser = build_parser()
+    args = parser.parse_args(argv)
 
+    if args.init:
+        return run_init(PasswordManager())
 
-def main() -> None:
-    """Войти и запустить главное меню."""
-    manager = _temporary_login()
+    if args.unlock:
+        manager = PasswordManager()
+        if not manager.exists():
+            print("Хранилище не найдено. Сначала выполните --init")
+            return 1
+        if not run_unlock(manager):
+            return 1
+        menu(manager)
+        return 0
 
-    while True:
-        print("\n=== Менеджер паролей ===")
-        print("1. Добавить запись")
-        print("2. Список записей")
-        print("3. Показать пароль")
-        print("4. Удалить запись")
-        print("0. Выход")
+    if args.generate:
+        print("тут будет --generate")
+        return 0
 
-        choice = input("> ").strip()
-
-        if choice == "1":
-            cmd_add(manager)
-        elif choice == "2":
-            cmd_list(manager)
-        elif choice == "3":
-            cmd_get(manager)
-        elif choice == "4":
-            cmd_delete(manager)
-        elif choice == "0":
-            print("До свидания")
-            break
-        else:
-            print("Нет такой команды")
+    parser.print_help()
+    return 1

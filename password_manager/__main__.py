@@ -1,3 +1,5 @@
+import sys
+
 from password_manager.cli import main
 
-main()
+sys.exit(main())

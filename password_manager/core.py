@@ -24,7 +24,7 @@ class PasswordManager:
         return raw
 
     def _persist(self) -> None:
-        """Зашифровать записи и записать хранилище в JSON-файл."""
+        """Записать хранилище в JSON-файл."""
         key = self._require_unlocked()
         if self._master_salt is None or self._master_hash is None or self._key_salt is None:
             raise RuntimeError("Хранилище не инициализировано")
@@ -44,6 +44,9 @@ class PasswordManager:
         with open(self._path, "w", encoding="utf-8") as f:
             json.dump(raw, f, indent=2)
 
+    def exists(self) -> bool:
+        """Есть ли файл хранилища."""
+        return os.path.exists(self._path)
 
     def has_entry(self, name: str) -> bool:
         """Проверить, есть ли запись с таким названием."""
