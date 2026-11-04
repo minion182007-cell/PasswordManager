@@ -1,7 +1,8 @@
+import string
+
 import pytest
 
 from password_manager.crypto_utils import generate_password
-import string
 
 
 def test_password_has_requested_length():

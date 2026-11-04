@@ -1,7 +1,14 @@
+import base64
 import json
 import os
-import base64
-from password_manager.crypto_utils import encrypt, decrypt, hash_master, derive_key,verify_master
+
+from password_manager.crypto_utils import (
+    decrypt,
+    derive_key,
+    encrypt,
+    hash_master,
+    verify_master,
+)
 
 DEFAULT_PATH = "vault.json"
 
@@ -25,20 +32,22 @@ class PasswordManager:
 
     def verify(self, password: str) -> bool:
         """Проверить мастер-пароль у открытого хранилища."""
-        if self._master_salt==None or self._master_hash==None:
+        if self._master_salt == None or self._master_hash == None:
             return False
-        return verify_master(password,self._master_salt,self._master_hash)
+        return verify_master(password, self._master_salt, self._master_hash)
 
     def _persist(self) -> None:
         """Записать хранилище в JSON-файл."""
         key = self._require_unlocked()
-        if self._master_salt is None or self._master_hash is None or self._key_salt is None:
+        if (
+            self._master_salt is None
+            or self._master_hash is None
+            or self._key_salt is None
+        ):
             raise RuntimeError("Хранилище не инициализировано")
-
 
         plain = json.dumps(self._entries, ensure_ascii=False).encode()
         token = encrypt(plain, key).decode()
-
 
         raw = {
             "master_salt": base64.b64encode(self._master_salt).decode(),
@@ -95,22 +104,22 @@ class PasswordManager:
         self._key = derive_key(password, self._key_salt)
         self._entries = {}
         self._persist()
+
     def unlock(self, password: str) -> bool:
         """Проверить мастер-пароль и загрузить записи. Вернуть True при успехе."""
         if not os.path.exists(self._path):
             return False
-        raw=self._load()
-
+        raw = self._load()
 
         master_salt = base64.b64decode(raw["master_salt"])
         master_hash = base64.b64decode(raw["master_hash"])
-        key_salt=base64.b64decode(raw["key_salt"])
-        if not verify_master(password,master_salt,master_hash):
+        key_salt = base64.b64decode(raw["key_salt"])
+        if not verify_master(password, master_salt, master_hash):
             return False
         self._master_salt = master_salt
         self._master_hash = master_hash
         self._key_salt = key_salt
-        self._key=derive_key(password,self._key_salt)
+        self._key = derive_key(password, self._key_salt)
 
         token = raw["data"].encode()
         plain = decrypt(token, self._key)

@@ -1,6 +1,5 @@
 import pytest
 
-
 from password_manager.core import PasswordManager
 
 

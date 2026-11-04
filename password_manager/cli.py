@@ -3,7 +3,6 @@
 import argparse
 from getpass import getpass
 
-
 from password_manager.core import PasswordManager
 from password_manager.crypto_utils import generate_password
 
@@ -15,9 +14,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Менеджер паролей в терминале")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--init", action="store_true", help="создать новое хранилище")
-    group.add_argument("--unlock", action="store_true", help="открыть хранилище и перейти в меню")
-    group.add_argument("--generate", action="store_true", help="сгенерировать надёжный пароль")
-    group.add_argument("--length", type=int, default=16, help="длина пароля для --generate")
+    group.add_argument(
+        "--unlock", action="store_true", help="открыть хранилище и перейти в меню"
+    )
+    group.add_argument(
+        "--generate", action="store_true", help="сгенерировать надёжный пароль"
+    )
+    group.add_argument(
+        "--length", type=int, default=16, help="длина пароля для --generate"
+    )
     return parser
 
 
@@ -157,13 +162,12 @@ def _run(argv: list[str] | None) -> int:
         return 0
 
     if args.generate:
-        if args.generate:
-            try:
-                print(generate_password(args.length))
-                return 0
-            except ValueError as e:
-                print(e)
-                return 1
+        try:
+            print(generate_password(args.length))
+            return 0
+        except ValueError as e:
+            print(e)
+            return 1
 
     parser.print_help()
     return 1

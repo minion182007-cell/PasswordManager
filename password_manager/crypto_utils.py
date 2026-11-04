@@ -15,10 +15,7 @@ ALPHABET = string.ascii_letters + string.digits + string.punctuation
 def derive_key(password: str, salt: bytes) -> bytes:
     """Получить ключ Fernet из мастер-пароля (строка) и соли (байты)."""
     kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=ITERATIONS
+        algorithm=hashes.SHA256(), length=32, salt=salt, iterations=ITERATIONS
     )
     password_byte = password.encode()
     key = base64.urlsafe_b64encode(kdf.derive(password_byte))
@@ -41,10 +38,7 @@ def decrypt(token: bytes, key: bytes) -> bytes:
 def hash_master(password: str, salt: bytes) -> bytes:
     """Возвращает хеш мастер-пароля(32 сырых байта)"""
     kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=ITERATIONS
+        algorithm=hashes.SHA256(), length=32, salt=salt, iterations=ITERATIONS
     )
     password_byte = password.encode()
     return kdf.derive(password_byte)
@@ -61,10 +55,10 @@ def generate_password(length: int = 16) -> str:
     if length < MIN_PASSWORD_LENGTH:
         raise ValueError("Длина не достигает 8")
     while True:
-        pwd="".join(secrets.choice(ALPHABET) for _ in range(length))
+        pwd = "".join(secrets.choice(ALPHABET) for _ in range(length))
         if (
-                any(ch in string.ascii_letters for ch in pwd)
-                and any(ch in string.digits for ch in pwd)
-                and any(ch in string.punctuation for ch in pwd)
+            any(ch in string.ascii_letters for ch in pwd)
+            and any(ch in string.digits for ch in pwd)
+            and any(ch in string.punctuation for ch in pwd)
         ):
             return pwd
