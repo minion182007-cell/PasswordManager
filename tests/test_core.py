@@ -1,6 +1,7 @@
+from pathlib import Path
+
 import pytest
 
-from pathlib import Path
 from password_manager.core import PasswordManager
 
 
@@ -26,7 +27,7 @@ def test_unlock_with_wrong_password(tmp_path: Path) -> None:
 
 def test_init_twice_fails(tmp_path: Path) -> None:
     """Повторный init_master по тому же пути выбрасывает FileExistsError."""
-    path=make_vault(tmp_path)
+    path = make_vault(tmp_path)
     with pytest.raises(FileExistsError):
         PasswordManager(path).init_master("other")
 
