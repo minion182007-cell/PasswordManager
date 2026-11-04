@@ -56,10 +56,12 @@ class PasswordManager:
 
     def has_entry(self, name: str) -> bool:
         """Проверить, есть ли запись с таким названием."""
+        self._require_unlocked()
         return name in self._entries
 
     def add_entry(self, name: str, login: str, pwd: str) -> None:
         """Добавить или перезаписать запись и сразу сохранить."""
+        self._require_unlocked()
         self._entries[name] = {"login": login, "password": pwd}
         self._persist()
 
@@ -69,6 +71,7 @@ class PasswordManager:
 
     def delete_entry(self, name: str) -> bool:
         """Удалить запись. Вернуть True, если удалили, и False, если такой не было."""
+        self._require_unlocked()
         if name not in self._entries:
             return False
         del self._entries[name]

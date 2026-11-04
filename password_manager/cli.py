@@ -2,7 +2,7 @@
 
 import argparse
 from getpass import getpass
-from zoneinfo import reset_tzpath
+
 
 from password_manager.core import PasswordManager
 from password_manager.crypto_utils import generate_password
