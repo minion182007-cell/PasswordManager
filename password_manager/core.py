@@ -1,3 +1,5 @@
+"""Класс PasswordManager: мастер-пароль, записи и файл хранилища."""
+
 import base64
 import json
 import os
@@ -76,6 +78,7 @@ class PasswordManager:
 
     def get_entry(self, name: str) -> dict[str, str] | None:
         """Вернуть запись (словарь) или None, если такой нет."""
+        self._require_unlocked()
         return self._entries.get(name)
 
     def delete_entry(self, name: str) -> bool:

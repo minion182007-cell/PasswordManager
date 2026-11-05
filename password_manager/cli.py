@@ -20,7 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
     group.add_argument(
         "--generate", action="store_true", help="сгенерировать надёжный пароль"
     )
-    group.add_argument(
+    parser.add_argument(
         "--length", type=int, default=16, help="длина пароля для --generate"
     )
     return parser

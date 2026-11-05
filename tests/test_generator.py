@@ -1,3 +1,5 @@
+"""Тесты генератора паролей."""
+
 import string
 
 import pytest

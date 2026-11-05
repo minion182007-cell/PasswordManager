@@ -1,3 +1,5 @@
+"""Тесты класса PasswordManager."""
+
 from pathlib import Path
 
 import pytest

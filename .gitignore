@@ -1,6 +1,6 @@
-   __pycache__/
-   *.pyc
-   vault.json
-   vault.dat
-   salt.bin
-   .venv/
+__pycache__/
+*.pyc
+vault.json
+vault.dat
+salt.bin
+.venv/
